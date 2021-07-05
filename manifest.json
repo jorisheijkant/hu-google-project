@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+
+  "name": "HU Google plug-in",
+  "description": "This extension is meant for research purposes and manipulates Google results by adding/removing/moving news sources.",
+  "version": "1.0",
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.google.nl/*",
+        "*://*.google.com/*"
+      ],
+      "js": [
+        "mangle.js"
+      ]
+    }
+  ]
+}
