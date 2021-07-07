@@ -14,10 +14,18 @@ let fetchFilters = async function() {
     }
 }
 
-// Set filters to a variable
-let filters = fetchFilters();
+// this function fetches the results from the VPS
+let fetchResults = async function() {
+    let response = await fetch('https://api.jorisheijkant.nl/data/hu/results.json');
 
-
+    if (response.ok) {
+        let json = await response.json();
+        console.log('fetched results!', json);
+        return json;
+    } else {
+        console.log("HTTP-Error: " + response.status);
+    }
+}
 
 // The main function that's mangling the results
 // Conditionally fired at the bottom of this script
@@ -47,6 +55,18 @@ let mangleResults = () => {
             let idWrapper = result.getElementsByTagName('div')[0];
             let id = idWrapper ? idWrapper.getAttribute('data-hveid') : '';
             let isNews = false;
+            let changeIt = Boolean(Math.round(Math.random()));
+            let linkLabel = link.getElementsByTagName('div')[0];
+            let linkTitle = link.getElementsByTagName('h3')[0];
+
+            function changeElement() {
+                if(changeIt && newsInGoogle && newsInGoogle.length > 0) {
+                    linkLabel.innerHTML = newsInGoogle[0].urlText;
+                    link.href = newsInGoogle[0].url;
+                    linkTitle.innerHTML = newsInGoogle[0].title;
+                } else {
+                }
+            }
 
             if(link && link.href) {
                 // Check whether this is a link to a legacy news site
@@ -55,8 +75,9 @@ let mangleResults = () => {
 
                     // If it's news, color the thing red
                     if(isNews) {
-                        console.log('News result!', medium.name);
-                        idWrapper.style.background = "#CCCCCC";
+                        idWrapper.style.background = "#EEEEEE";
+                    } else {
+                        changeElement();
                     }
                 });
             }
@@ -72,14 +93,26 @@ let mangleResults = () => {
 
 // First check if we're on a Google page
 let isGoogle;
+let filters;
+let newsInGoogle;
 
 if(window && window.location && window.location.href) {
     isGoogle = window.location.href.includes('google') && window.location.href.includes('search');
 }
 
 if(isGoogle) {
-    console.log('User navigating Google search page');
-    mangleResults();
+    let mangle = async () => {
+        console.log('User navigating Google search page');
+        // Set filters to a variable
+        // Same for results
+        filters = await fetchFilters();
+        newsInGoogle = await fetchResults();
+
+        mangleResults();
+    };
+
+    mangle();
+
 } else {
     console.log('User not on a Google search page');
 }
