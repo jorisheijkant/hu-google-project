@@ -1,6 +1,24 @@
 // This is the main script that changes the search results
 // See comments for more info on how it works
 
+// this function fetches the filters from the VPS
+let fetchFilters = async function() {
+    let response = await fetch('https://api.jorisheijkant.nl/data/hu/legacy-filters.json');
+
+    if (response.ok) {
+        let json = await response.json();
+        console.log('fetched filters!', json);
+        return json;
+    } else {
+        console.log("HTTP-Error: " + response.status);
+    }
+}
+
+// Set filters to a variable
+let filters = fetchFilters();
+
+
+
 // The main function that's mangling the results
 // Conditionally fired at the bottom of this script
 let mangleResults = () => {
@@ -32,7 +50,7 @@ let mangleResults = () => {
 
             if(link && link.href) {
                 // Check whether this is a link to a legacy news site
-                legacyMedia.forEach(medium => {
+                filters.forEach(medium => {
                     isNews = link.href.includes(medium.url);
 
                     // If it's news, color the thing red
@@ -41,8 +59,6 @@ let mangleResults = () => {
                         idWrapper.style.background = "#CCCCCC";
                     }
                 });
-
-
             }
 
             resultsArray.push({
@@ -53,84 +69,6 @@ let mangleResults = () => {
         })
     }
 }
-
-
-// Set up the legavy media news sites array
-// TO DO: import this somehow instead of hardcoding in the main script
-const legacyMedia = [
-    {
-        "name": "NOS",
-        "url": "nos.nl"
-    },
-    {
-        "name": "Brabants Dagblad",
-        "url": "bd.nl"
-    },
-    {
-        "name": "Volkskrant",
-        "url": "volkskrant.nl"
-    },
-    {
-        "name": "BNR Nieuwsradio",
-        "url": "bnr.nl"
-    },
-    {
-        "name": "RTL",
-        "url": "rtlnieuws.nl"
-    },
-    {
-        "name": "Omroep Brabant",
-        "url": "omroepbrabant.nl"
-    },
-    {
-        "name": "Het Parool",
-        "url": "parool"
-    },
-    {
-        "name": "Financieel Dagblad",
-        "url": "fd.nl"
-    },
-    {
-        "name": "Eindhovens Dagblad",
-        "url": "ed.nl"
-    },
-    {
-        "name": "RTL Boulevard",
-        "url": "rtlboulevard.nl"
-    },
-    {
-        "name": "Algemeen Dagblad",
-        "url": "ad.nl"
-    },
-    {
-        "name": "De Gelderlander",
-        "url": "gelderlander.nl"
-    },
-    {
-        "name": "De Stentor",
-        "url": "destentor.nl"
-    },
-    {
-        "name": "VPRO",
-        "url": "vpro.nl"
-    },
-    {
-        "name": "Vrij Nederland",
-        "url": "vn.nl"
-    },
-    {
-        "name": "Omroep Tilburg",
-        "url": "omroeptilburg.nl"
-    },
-    {
-        "name": "HP/De Tijd",
-        "url": "hpdetijd.nl"
-    },
-    {
-        "name": "NRC Handelsblad",
-        "url": "nrc.nl"
-    }
-]
 
 // First check if we're on a Google page
 let isGoogle;

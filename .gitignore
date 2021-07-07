@@ -1,0 +1,5 @@
+# don't put the deploy scripts with my vps info in the repo
+deploy/
+
+# standard IDE stuffs
+.idea
