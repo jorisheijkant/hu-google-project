@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>HU extension options</title>
+    
+    <style>
+        .popup-content {
+            padding: 10px;
+        }
+        
+        .popup-content .group-label {
+            margin-bottom: 20px !important;
+            font-size: 18px;
+            font-family: 'arial', sans-serif;
+            font-weight: bold;
+        }
+        
+        .popup-content .group-select {
+            min-height: 40px;
+	        margin-bottom: 20px;
+	        font-family: 'arial', sans-serif;
+        }
+        
+        .popup-content .save-button {
+            min-height: 40px;
+            border: 1px solid black;
+            border-radius: 3px;
+            background: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="popup-content">
+    <label for="group" class="group-label">Test group</label>
+    
+    <select id="group" class="group-select">
+        <option value="1">Group 1</option>
+        <option value="2">Group 2</option>
+        <option value="3">Group 3</option>
+    </select>
+    
+    <p id="status"></p>
+    
+    <button id="save" class="save-button">Save</button>
+</div>
+
+
+<script src="options.js"></script>
+</body>
+</html>

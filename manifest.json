@@ -8,6 +8,11 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
+  "options_page": "options.html",
+  "browser_action": {
+    "default_title": "Group manager",
+    "default_popup":"options.html"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -16,7 +21,13 @@
       ],
       "js": [
         "mangle.js"
+      ],
+      "css": [
+        "styles.css"
       ]
     }
+  ],
+  "permissions": [
+    "storage"
   ]
 }

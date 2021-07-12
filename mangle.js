@@ -27,6 +27,14 @@ let fetchResults = async function() {
     }
 }
 
+// Declare the user group profiles here
+let userGroups = [
+    [], // GROUP 0 is empty
+    [9,8,7,6,5,4,3,2,1,0], // GROUP 1 More news results
+    [0,1,2,3,4,5,6,7,8,9], // GROUP 2 Less news results
+    [4,4,5,5,4,4,5,5,4,4] // GROUP 3 Evenly spread news results
+];
+
 // The main function that's mangling the results
 // Conditionally fired at the bottom of this script
 let mangleResults = () => {
@@ -36,31 +44,103 @@ let mangleResults = () => {
     let resultsWrapper;
     let resultsContainer;
     let results = [];
-    let resultsArray = [];
+    let userGroup;
+    let pageNumber;
 
-    // Check if we can access the DOM and from there pull the results Google gives us
-    if (document) {
-        resultsWrapper = document.querySelector('#search');
-        if (resultsWrapper) {
-            resultsContainer = resultsWrapper.querySelector('#rso')
+    // Fill them in a promise, so we're sure we're set when we start changing
+    let setVariables = new Promise(resolve => {
+        // Check if we can access the DOM and from there pull the results Google gives us
+        if (document) {
+            resultsWrapper = document.querySelector('#search');
+            if (resultsWrapper) {
+                resultsContainer = resultsWrapper.querySelector('#rso')
+            }
+
+            // Also fetch page number here
+            let statsWrapper = document.querySelector('#result-stats');
+            if(statsWrapper) {
+                let statsText = statsWrapper.innerText;
+                if(statsText && statsText.includes('Pagina')) {
+                    let page = statsText.replace('Pagina ', '').split('van');
+                    pageNumber = Number(page[0]);
+                } else {
+                    pageNumber = 1;
+                }
+                console.log('Were at page', pageNumber);
+            }
         }
-    }
 
-    // If there's a results container fetch these results and list them
-    if(resultsContainer) {
-        results = resultsContainer.querySelectorAll('.g');
+        // Check if the user's group is there and assign a profile
+        if(chrome && chrome.storage) {
+            chrome.storage.local.get(['group'], function(result) {
+                console.log('Group currently is ' + result.group);
+                if(result.group) {
+                    userGroup = userGroups[result.group];
+                    console.log('profile array', userGroup);
+                    resolve();
+                }
+            });
+        } else {
+            console.log('No chrome.storage object');
+            resolve();
+        }
+    });
 
-        results.forEach(result => {
-            let link = result.getElementsByTagName('a')[0];
-            let idWrapper = result.getElementsByTagName('div')[0];
-            let id = idWrapper ? idWrapper.getAttribute('data-hveid') : '';
-            let isNews = false;
-            let changeIt = Boolean(Math.round(Math.random()));
-            let linkLabel = link.getElementsByTagName('div')[0];
-            let linkTitle = link.getElementsByTagName('h3')[0];
+    setVariables.then(res => {
+        // If there's a results container fetch these results and list them
+        if(resultsContainer) {
+            // Set results element
+            results = resultsContainer.querySelectorAll('.g');
 
-            function changeElement() {
-                if(changeIt && newsInGoogle && newsInGoogle.length > 0) {
+            // Set news results Needed based on usergroup and page index
+            let newsResultsNeeded = userGroup[pageNumber - 1];
+            let newsResultsOnPage = 0;
+
+            let checkNews = (result) => {
+                // Set link sub-elements
+                let link = result.getElementsByTagName('a')[0];
+                let isNews;
+
+                if(link && link.href) {
+                    // Check whether this is a link to a legacy news site
+                    for (let index = 0; index < filters.length; index++) {
+                        isNews = link.href.includes(filters[index].url);
+                        if(isNews) {
+                            console.log(link.href, 'is a news result!')
+                            return true;
+                        }
+                    }
+
+                    return isNews;
+                }
+            }
+
+            let resultsArray = Array.from(results).map(result => {
+                return {
+                    element: result,
+                    isNews: checkNews(result)
+                }
+            });
+
+            let newsResults = resultsArray.reduce((accumulator, currentValue) => {
+                if(currentValue.isNews) {
+                    return accumulator + 1;
+                } else {
+                    return accumulator;
+                }
+            }, 0);
+
+            console.log(`We need ${newsResultsNeeded} news results, we have ${newsResults} news results, the total amount of hits for this page equals ${results.length}.`);
+
+            // Change element function
+            // TO DO: make dynamic with item that is to be inserted
+            let changeElement = (element, inserted) => {
+                let link = element.getElementsByTagName('a')[0];
+                let linkLabel = link.getElementsByTagName('div')[0];
+                let linkTitle = link.getElementsByTagName('h3')[0];
+
+                if(newsInGoogle && newsInGoogle.length > 0) {
+                    console.log('changing element');
                     linkLabel.innerHTML = newsInGoogle[0].urlText;
                     link.href = newsInGoogle[0].url;
                     linkTitle.innerHTML = newsInGoogle[0].title;
@@ -68,27 +148,67 @@ let mangleResults = () => {
                 }
             }
 
-            if(link && link.href) {
-                // Check whether this is a link to a legacy news site
-                filters.forEach(medium => {
-                    isNews = link.href.includes(medium.url);
+            // Shuffle array, borrowed from Mike Bostock
+            // TO DO: import this
+            function shuffle(array) {
+                let copy = [], n = array.length, i;
 
-                    // If it's news, color the thing red
-                    if(isNews) {
-                        idWrapper.style.background = "#EEEEEE";
-                    } else {
-                        changeElement();
+                // While there remain elements to shuffle…
+                while (n) {
+
+                    // Pick a remaining element…
+                    i = Math.floor(Math.random() * array.length);
+
+                    // If not already shuffled, move it to the new array.
+                    if (i in array) {
+                        copy.push(array[i]);
+                        delete array[i];
+                        n--;
                     }
-                });
+                }
+
+                return copy;
             }
 
-            resultsArray.push({
-                id: id,
-                link: link,
-                news: isNews
-            });
-        })
-    }
+            // Shuffle the array to not replace items top to bottom, but randomly
+            let shuffledResults = shuffle(resultsArray);
+
+            let difference = newsResultsNeeded - newsResults;
+            if(difference > 0) {
+                // Less news results than needed, inserting some
+                let insertNews = difference;
+                let inserted = 0;
+                console.log(`Inserting ${insertNews} news results`);
+                shuffledResults.forEach(result => {
+                    if(!result.isNews && inserted < insertNews) {
+                        changeElement(result.element);
+                        inserted++;
+                    }
+                })
+
+            } else if(difference < 0) {
+                // More news results than needed, deleting some
+                let insertNormal = Math.abs(difference);
+                let inserted = 0;
+                console.log(`Inserting ${insertNormal} normal results`);
+
+                shuffledResults.forEach(result => {
+                    if(result.isNews && inserted < insertNormal) {
+                        changeElement(result.element);
+                        inserted++;
+                    }
+                })
+            } else {
+                console.log('Exactly the right amount of news results on this page already.')
+            }
+
+            // After all is done show them results
+            if(resultsWrapper) {
+                resultsWrapper.style.opacity = 1;
+            }
+        }
+    }).catch(e => console.log('error setting base variables, ', e));
+
 }
 
 // First check if we're on a Google page
