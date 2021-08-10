@@ -7,7 +7,7 @@ let fetchFilters = async function() {
 
     if (response.ok) {
         let json = await response.json();
-        console.log('fetched filters!', json);
+        console.log(`fetched ${json.length} filters`);
         return json;
     } else {
         console.log("HTTP-Error: " + response.status);
@@ -15,12 +15,25 @@ let fetchFilters = async function() {
 }
 
 // this function fetches the results from the VPS
-let fetchResults = async function() {
-    let response = await fetch('https://api.jorisheijkant.nl/data/hu/results.json');
+let fetchNewsResults = async function() {
+    let response = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/sylvester-eijffinger/news-results.json');
 
     if (response.ok) {
         let json = await response.json();
-        console.log('fetched results!', json);
+        console.log(`fetched ${json.length} news results`);
+        return json;
+    } else {
+        console.log("HTTP-Error: " + response.status);
+    }
+}
+
+// this function fetches the results from the VPS
+let fetchRegularResults = async function() {
+    let response = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/sylvester-eijffinger/regular-results.json');
+
+    if (response.ok) {
+        let json = await response.json();
+        console.log(`fetched ${json.length} regular results`);
         return json;
     } else {
         console.log("HTTP-Error: " + response.status);
@@ -87,14 +100,30 @@ let mangleResults = () => {
     });
 
     setVariables.then(res => {
-        // If there's a results container fetch these results and list them
-        if(resultsContainer) {
+        // If there's a results container, and we're in the first 10 pages, fetch these results and list them
+        if(resultsContainer && pageNumber < 11) {
             // Set results element
             results = resultsContainer.querySelectorAll('.g');
 
             // Set news results Needed based on usergroup and page index
             let newsResultsNeeded = userGroup[pageNumber - 1];
+
+            let newsRange = helpers.getResultsRange(userGroup, pageNumber - 1);
+            let regularRange = helpers.getRegularResultsRange(userGroup, pageNumber - 1);
+
+            console.log('ranges', newsRange, regularRange);
+
+            let newsRangeStart = helpers.getIndex(newsInGoogle, newsRange.start, newsRange.length);
+            let regularRangeStart = helpers.getIndex(regularInGoogle, regularRange.start, newsRange.length);
+
+            console.log('starts', newsRangeStart, regularRangeStart);
+
+            let news = newsInGoogle.slice(newsRangeStart, newsRange.end);
+            let regular = regularInGoogle.slice(regularRangeStart, regularRange.end);
             let newsResultsOnPage = 0;
+
+            console.log('news items for this page', news);
+            console.log('regular items for this page', regular);
 
             let checkNews = (result) => {
                 // Set link sub-elements
@@ -104,9 +133,9 @@ let mangleResults = () => {
                 if(link && link.href) {
                     // Check whether this is a link to a legacy news site
                     for (let index = 0; index < filters.length; index++) {
-                        isNews = link.href.includes(filters[index].url);
+                        isNews = link.href.includes(filters[index].url_pattern);
                         if(isNews) {
-                            console.log(link.href, 'is a news result!')
+                            console.log(link.href, 'is a news result!');
                             return true;
                         }
                     }
@@ -118,7 +147,7 @@ let mangleResults = () => {
             let resultsArray = Array.from(results).map(result => {
                 return {
                     element: result,
-                    isNews: checkNews(result)
+                    isNews: checkNews(result),
                 }
             });
 
@@ -134,44 +163,34 @@ let mangleResults = () => {
 
             // Change element function
             // TO DO: make dynamic with item that is to be inserted
-            let changeElement = (element, inserted) => {
+            let changeElement = (element, isNews, index) => {
                 let link = element.getElementsByTagName('a')[0];
                 let linkLabel = link.getElementsByTagName('div')[0];
                 let linkTitle = link.getElementsByTagName('h3')[0];
+                let innerText = element.querySelector(':scope > div > div > div:nth-of-type(2)');
 
-                if(newsInGoogle && newsInGoogle.length > 0) {
-                    console.log('changing element');
-                    linkLabel.innerHTML = newsInGoogle[0].urlText;
-                    link.href = newsInGoogle[0].url;
-                    linkTitle.innerHTML = newsInGoogle[0].title;
+                if(isNews) {
+                    // Add a news element
+                    let newElement = news[index];
+                    console.log('swapping element', element, 'for', newElement);
+                    if(news && news.length > 0) {
+                        linkLabel.innerHTML = news[index].urlText;
+                        link.href = news[index].url;
+                        linkTitle.innerHTML = news[index].title;
+                        innerText.innerHTML = news[index].text;
+                    }
                 } else {
-                }
-            }
-
-            // Shuffle array, borrowed from Mike Bostock
-            // TO DO: import this
-            function shuffle(array) {
-                let copy = [], n = array.length, i;
-
-                // While there remain elements to shuffle…
-                while (n) {
-
-                    // Pick a remaining element…
-                    i = Math.floor(Math.random() * array.length);
-
-                    // If not already shuffled, move it to the new array.
-                    if (i in array) {
-                        copy.push(array[i]);
-                        delete array[i];
-                        n--;
+                    if(regular && regular.length > 0) {
+                        linkLabel.innerHTML = regular[index].urlText;
+                        link.href = regular[index].url;
+                        linkTitle.innerHTML = regular[index].title;
+                        innerText.innerHTML = regular[index].text;
                     }
                 }
-
-                return copy;
             }
 
             // Shuffle the array to not replace items top to bottom, but randomly
-            let shuffledResults = shuffle(resultsArray);
+            let shuffledResults = helpers.shuffle(resultsArray);
 
             let difference = newsResultsNeeded - newsResults;
             if(difference > 0) {
@@ -179,9 +198,10 @@ let mangleResults = () => {
                 let insertNews = difference;
                 let inserted = 0;
                 console.log(`Inserting ${insertNews} news results`);
-                shuffledResults.forEach(result => {
+
+                shuffledResults.forEach((result, index) => {
                     if(!result.isNews && inserted < insertNews) {
-                        changeElement(result.element);
+                        changeElement(result.element, true, index);
                         inserted++;
                     }
                 })
@@ -192,9 +212,9 @@ let mangleResults = () => {
                 let inserted = 0;
                 console.log(`Inserting ${insertNormal} normal results`);
 
-                shuffledResults.forEach(result => {
+                shuffledResults.forEach((result, index) => {
                     if(result.isNews && inserted < insertNormal) {
-                        changeElement(result.element);
+                        changeElement(result.element, false, index);
                         inserted++;
                     }
                 })
@@ -206,6 +226,8 @@ let mangleResults = () => {
             if(resultsWrapper) {
                 resultsWrapper.style.opacity = 1;
             }
+        } else {
+            console.log('No results container or out of range, page is ', pageNumber);
         }
     }).catch(e => console.log('error setting base variables, ', e));
 
@@ -215,6 +237,7 @@ let mangleResults = () => {
 let isGoogle;
 let filters;
 let newsInGoogle;
+let regularInGoogle;
 
 if(window && window.location && window.location.href) {
     isGoogle = window.location.href.includes('google') && window.location.href.includes('search');
@@ -226,7 +249,8 @@ if(isGoogle) {
         // Set filters to a variable
         // Same for results
         filters = await fetchFilters();
-        newsInGoogle = await fetchResults();
+        newsInGoogle = await fetchNewsResults();
+        regularInGoogle = await fetchRegularResults()
 
         mangleResults();
     };

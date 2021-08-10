@@ -20,6 +20,7 @@
         "*://*.google.com/*"
       ],
       "js": [
+        "helpers.js",
         "mangle.js"
       ],
       "css": [
