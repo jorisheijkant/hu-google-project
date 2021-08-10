@@ -7,7 +7,7 @@ let fetchFilters = async function() {
 
     if (response.ok) {
         let json = await response.json();
-        console.log(`fetched ${json.length} filters`);
+        debugIt(`fetched ${json.length} filters`);
         return json;
     } else {
         console.log("HTTP-Error: " + response.status);
@@ -20,10 +20,10 @@ let fetchNewsResults = async function() {
 
     if (response.ok) {
         let json = await response.json();
-        console.log(`fetched ${json.length} news results`);
+        debugIt(`fetched ${json.length} news results`);
         return json;
     } else {
-        console.log("HTTP-Error: " + response.status);
+        debugIt("HTTP-Error: " + response.status);
     }
 }
 
@@ -33,10 +33,11 @@ let fetchRegularResults = async function() {
 
     if (response.ok) {
         let json = await response.json();
-        console.log(`fetched ${json.length} regular results`);
+        debugIt(`fetched ${json.length} regular results`);
+
         return json;
     } else {
-        console.log("HTTP-Error: " + response.status);
+        debugIt("HTTP-Error: " + response.status);
     }
 }
 
@@ -51,7 +52,7 @@ let userGroups = [
 // The main function that's mangling the results
 // Conditionally fired at the bottom of this script
 let mangleResults = () => {
-    console.log('Now mangling the results');
+    debugIt('Now mangling the results');
 
     // Set some variables
     let resultsWrapper;
@@ -79,22 +80,31 @@ let mangleResults = () => {
                 } else {
                     pageNumber = 1;
                 }
-                console.log('Were at page', pageNumber);
+
+                debugIt('Were at page', pageNumber);
             }
         }
 
         // Check if the user's group is there and assign a profile
         if(chrome && chrome.storage) {
-            chrome.storage.local.get(['group'], function(result) {
-                console.log('Group currently is ' + result.group);
+            chrome.storage.local.get(['group', 'debug'], function(result) {
+                debugIt('Group currently is ' + result.group);
+
                 if(result.group) {
                     userGroup = userGroups[result.group];
-                    console.log('profile array', userGroup);
+                    debugIt('profile array', userGroup);
+
                     resolve();
                 }
+
+                if(Number(result.debug)) {
+                    debug = true;
+                }
+
+                debugIt('Debug currently is ' + debug);
             });
         } else {
-            console.log('No chrome.storage object');
+            debugIt('No chrome.storage object');
             resolve();
         }
     });
@@ -111,19 +121,15 @@ let mangleResults = () => {
             let newsRange = helpers.getResultsRange(userGroup, pageNumber - 1);
             let regularRange = helpers.getRegularResultsRange(userGroup, pageNumber - 1);
 
-            console.log('ranges', newsRange, regularRange);
-
             let newsRangeStart = helpers.getIndex(newsInGoogle, newsRange.start, newsRange.length);
             let regularRangeStart = helpers.getIndex(regularInGoogle, regularRange.start, newsRange.length);
-
-            console.log('starts', newsRangeStart, regularRangeStart);
 
             let news = newsInGoogle.slice(newsRangeStart, newsRange.end);
             let regular = regularInGoogle.slice(regularRangeStart, regularRange.end);
             let newsResultsOnPage = 0;
 
-            console.log('news items for this page', news);
-            console.log('regular items for this page', regular);
+            debugIt('news items for this page', news);
+            debugIt('regular items for this page', regular);
 
             let checkNews = (result) => {
                 // Set link sub-elements
@@ -135,7 +141,6 @@ let mangleResults = () => {
                     for (let index = 0; index < filters.length; index++) {
                         isNews = link.href.includes(filters[index].url_pattern);
                         if(isNews) {
-                            console.log(link.href, 'is a news result!');
                             return true;
                         }
                     }
@@ -159,7 +164,7 @@ let mangleResults = () => {
                 }
             }, 0);
 
-            console.log(`We need ${newsResultsNeeded} news results, we have ${newsResults} news results, the total amount of hits for this page equals ${results.length}.`);
+            debugIt(`We need ${newsResultsNeeded} news results, we have ${newsResults} news results, the total amount of hits for this page equals ${results.length}.`);
 
             // Change element function
             // TO DO: make dynamic with item that is to be inserted
@@ -168,23 +173,44 @@ let mangleResults = () => {
                 let linkLabel = link.getElementsByTagName('div')[0];
                 let linkTitle = link.getElementsByTagName('h3')[0];
                 let innerText = element.querySelector(':scope > div > div > div:nth-of-type(2)');
+                let isTwitter = element.querySelector('g-link');
 
-                if(isNews) {
+                if(isNews && !isTwitter) {
                     // Add a news element
                     let newElement = news[index];
-                    console.log('swapping element', element, 'for', newElement);
-                    if(news && news.length > 0) {
-                        linkLabel.innerHTML = news[index].urlText;
-                        link.href = news[index].url;
-                        linkTitle.innerHTML = news[index].title;
-                        innerText.innerHTML = news[index].text;
+                    debugIt(`Changing element ${element} for ${newElement}`);
+                    if(newElement) {
+                        if(linkLabel) {
+                            linkLabel.innerHTML = newElement.urlText;
+                        }
+                        if(link) {
+                            link.href = newElement.url;
+                        }
+                        if(linkTitle) {
+                            linkTitle.innerHTML = newElement.title;
+                        }
+                        if(innerText) {
+                            innerText.innerHTML = newElement.text;
+                        }
                     }
                 } else {
-                    if(regular && regular.length > 0) {
-                        linkLabel.innerHTML = regular[index].urlText;
-                        link.href = regular[index].url;
-                        linkTitle.innerHTML = regular[index].title;
-                        innerText.innerHTML = regular[index].text;
+                    if(!isTwitter) {
+                        let newElement = regular[index];
+                        debugIt(`Changing element ${element} for ${newElement}`);
+                        if(newElement) {
+                            if(linkLabel) {
+                                linkLabel.innerHTML = newElement.urlText;
+                            }
+                            if(link) {
+                                link.href = newElement.url;
+                            }
+                            if(linkTitle) {
+                                linkTitle.innerHTML = newElement.title;
+                            }
+                            if(innerText) {
+                                innerText.innerHTML = newElement.text;
+                            }
+                        }
                     }
                 }
             }
@@ -197,7 +223,8 @@ let mangleResults = () => {
                 // Less news results than needed, inserting some
                 let insertNews = difference;
                 let inserted = 0;
-                console.log(`Inserting ${insertNews} news results`);
+
+                debugIt(`Inserting ${insertNews} news results`);
 
                 shuffledResults.forEach((result, index) => {
                     if(!result.isNews && inserted < insertNews) {
@@ -210,7 +237,8 @@ let mangleResults = () => {
                 // More news results than needed, deleting some
                 let insertNormal = Math.abs(difference);
                 let inserted = 0;
-                console.log(`Inserting ${insertNormal} normal results`);
+
+                debugIt(`Inserting ${insertNormal} normal results`);
 
                 shuffledResults.forEach((result, index) => {
                     if(result.isNews && inserted < insertNormal) {
@@ -219,7 +247,7 @@ let mangleResults = () => {
                     }
                 })
             } else {
-                console.log('Exactly the right amount of news results on this page already.')
+                debugIt('Exactly the right amount of news results on this page already.')
             }
 
             // After all is done show them results
@@ -227,9 +255,11 @@ let mangleResults = () => {
                 resultsWrapper.style.opacity = 1;
             }
         } else {
-            console.log('No results container or out of range, page is ', pageNumber);
+            debugIt('No results container or out of range, page is ', pageNumber);
         }
-    }).catch(e => console.log('error setting base variables, ', e));
+    }).catch(e => {
+        debugIt(`error mangling results ${e}`)
+    });
 
 }
 
@@ -238,6 +268,13 @@ let isGoogle;
 let filters;
 let newsInGoogle;
 let regularInGoogle;
+let debug = false;
+
+let debugIt = function(item) {
+    if(debug) {
+        console.log(item);
+    }
+}
 
 if(window && window.location && window.location.href) {
     isGoogle = window.location.href.includes('google') && window.location.href.includes('search');
@@ -245,7 +282,8 @@ if(window && window.location && window.location.href) {
 
 if(isGoogle) {
     let mangle = async () => {
-        console.log('User navigating Google search page');
+        debugIt('User navigating Google search page');
+
         // Set filters to a variable
         // Same for results
         filters = await fetchFilters();
@@ -258,5 +296,5 @@ if(isGoogle) {
     mangle();
 
 } else {
-    console.log('User not on a Google search page');
+    debugIt('User not on a Google search page');
 }
