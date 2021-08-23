@@ -16,28 +16,39 @@ let fetchFilters = async function() {
 
 // this function fetches the results from the VPS
 let fetchNewsResults = async function() {
-    let response = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/sylvester-eijffinger/news-results.json');
+    let responseGroup1 = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/sylvester-eijffinger/news-results.json');
+    let responseGroup2 = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/peter-de-knijff/news-results.json');
 
-    if (response.ok) {
-        let json = await response.json();
-        debugIt(`fetched ${json.length} news results`);
-        return json;
+    if (responseGroup1.ok && responseGroup2.ok) {
+        let json1 = await responseGroup1.json();
+        let json2 = await responseGroup2.json()
+        debugIt(`fetched news results`);
+        debugIt(json1, json2);
+        return {
+            group1: json1,
+            group2: json2
+        };
     } else {
-        debugIt("HTTP-Error: " + response.status);
+        debugIt("HTTP-Error", responseGroup1.status, responseGroup2.status);
     }
 }
 
 // this function fetches the results from the VPS
 let fetchRegularResults = async function() {
-    let response = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/sylvester-eijffinger/regular-results.json');
+    let responseGroup1 = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/sylvester-eijffinger/regular-results.json');
+    let responseGroup2 = await fetch('https://api.jorisheijkant.nl/data/hu/news-results/peter-de-knijff/regular-results.json');
 
-    if (response.ok) {
-        let json = await response.json();
-        debugIt(`fetched ${json.length} regular results`);
 
-        return json;
+    if (responseGroup1.ok && responseGroup2.ok) {
+        let json1 = await responseGroup1.json();
+        let json2 = await responseGroup2.json()
+        debugIt(`fetched regular results`);
+        return {
+            group1: json1,
+            group2: json2
+        };
     } else {
-        debugIt("HTTP-Error: " + response.status);
+        debugIt("HTTP-Error", responseGroup1.status, responseGroup2.status);
     }
 }
 
@@ -59,6 +70,7 @@ let mangleResults = () => {
     let resultsContainer;
     let results = [];
     let userGroup;
+    let casus;
     let pageNumber;
 
     // Fill them in a promise, so we're sure we're set when we start changing
@@ -87,10 +99,11 @@ let mangleResults = () => {
 
         // Check if the user's group is there and assign a profile
         if(chrome && chrome.storage) {
-            chrome.storage.local.get(['group', 'debug'], function(result) {
-                debugIt('Group currently is ' + result.group);
+            chrome.storage.local.get(['group', 'debug', 'casus'], function(result) {
+                debugIt('Group currently is ' + result.group, 'case currently is', result.casus);
 
                 if(result.group) {
+                    casus = result.casus;
                     userGroup = userGroups[result.group];
                     debugIt('profile array', userGroup);
 
@@ -118,15 +131,29 @@ let mangleResults = () => {
             // Set news results Needed based on usergroup and page index
             let newsResultsNeeded = userGroup[pageNumber - 1];
 
+            let newsFetched;
+            let regularFetched;
+            if(casus === "1") {
+                newsFetched = newsInGoogle.group1;
+                regularFetched = regularInGoogle.group1;
+            } else if(casus === "2") {
+                newsFetched = newsInGoogle.group2;
+                regularFetched = regularInGoogle.group2;
+            } else {
+                // TODO: Make third case
+                newsFetched = newsInGoogle.group1;
+                regularFetched = regularInGoogle.group1;
+            }
+
+
             let newsRange = helpers.getResultsRange(userGroup, pageNumber - 1);
             let regularRange = helpers.getRegularResultsRange(userGroup, pageNumber - 1);
 
-            let newsRangeStart = helpers.getIndex(newsInGoogle, newsRange.start, newsRange.length);
-            let regularRangeStart = helpers.getIndex(regularInGoogle, regularRange.start, newsRange.length);
+            let newsRangeStart = helpers.getIndex(newsFetched, newsRange.start, newsRange.length);
+            let regularRangeStart = helpers.getIndex(regularFetched, regularRange.start, newsRange.length);
 
-            let news = newsInGoogle.slice(newsRangeStart, newsRange.end);
-            let regular = regularInGoogle.slice(regularRangeStart, regularRange.end);
-            let newsResultsOnPage = 0;
+            let news = newsFetched.slice(newsRangeStart, newsRange.end);
+            let regular = regularFetched.slice(regularRangeStart, regularRange.end);
 
             debugIt('news items for this page', news);
             debugIt('regular items for this page', regular);

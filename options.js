@@ -1,11 +1,13 @@
 // Saves options to chrome.storage
 function save_options() {
     let group = document.getElementById('group').value;
+    let casus = document.getElementById('casus').value;
     let debug = document.getElementById('debug').value;
     if(chrome) {
         chrome.storage.local.set({
             group: group,
-            debug: debug
+            debug: debug,
+            casus: casus
         }, () => {
             // Update status to let user know options were saved.
             let status = document.getElementById('status');
@@ -25,7 +27,8 @@ function restore_options() {
     if(chrome) {
         chrome.storage.local.get({
             group: 1,
-            debug: false
+            debug: false,
+            casus: 1
         }, function(items) {
             document.getElementById('group').value = items.group;
         });

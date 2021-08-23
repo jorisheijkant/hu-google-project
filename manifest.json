@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "HU Google plug-in",
   "description": "This extension is meant for research purposes and manipulates Google results by adding/removing/moving news sources.",
-  "version": "1.0",
+  "version": "1.1",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
