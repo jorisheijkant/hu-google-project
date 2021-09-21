@@ -72,6 +72,7 @@ let fetchData = async (variables) => {
 
         // Check whether the VPS is up. If not, we can fall back to calling the Airtable API directly
         // Calling the Airtable API directly all the time might cause us to hit some data limits, that's why
+        // Also you need to expose your key then, which is not what you want
         if(groupObject) {
             let vpsResults = await fetch(groupObject.url);
             vpsAvailable = vpsResults.ok;
@@ -97,17 +98,8 @@ let fetchData = async (variables) => {
     // If the VPS is up, get stuff from there
     if (vpsAvailable && groupObject) {
         results = await getUrl(groupObject.url);
-    } else if(groupObject) {
-        // If not, fall back to Airtable API
-        // TODO: fix CORS errors here and apply same function as above
-        results = await fetch(groupObject.airtableUrl, {
-            headers: {
-                'Authorization': 'Bearer keynBAOkaW1lN4uJW',
-                'Content-Type': 'application/json'
-            }
-        });
     } else {
-        debugIt('No group object found');
+        debugIt('No group object found or VPS not available');
     }
 
     return results;
