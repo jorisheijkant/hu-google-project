@@ -1,3 +1,67 @@
+/* First hide the whole search, later fade that in */
 #search {
 	opacity: 0;
+}
+
+/* Hide ads above results, since they visually clutter and might overlap */
+#taw {
+	display: none;
+}
+
+/* Take over basic styling from Google search result */
+
+.hu-result {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	align-content: flex-start;
+	margin: 0 0 30px;
+	
+	font-family: arial,sans-serif;
+}
+
+.hu-result p, .hu-result a {
+	margin: 0;
+}
+
+.hu-result .hu-result-top {
+	margin-bottom: 4px;
+}
+
+.hu-result .hu-result-top .hu-result-breadcrumbs {
+	font-style: normal;
+	font-size: 14px;
+	line-height: 18.2px;
+	margin-bottom: 3px;
+	
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+}
+
+.hu-result .hu-result-top .hu-result-breadcrumbs .hu-result-breadcrumbs-text {
+	color: #202124;
+	text-decoration: none;
+}
+
+.hu-result .hu-result-top .hu-result-breadcrumbs .hu-result-breadcrumbs-icon {
+	margin-left: 7px;
+	border-color: #70757a transparent;
+	border-style: solid;
+	border-width: 5px 4px 0 4px;
+	width: 0;
+	height: 0;
+}
+
+.hu-result .hu-result-top .hu-result-title {
+	padding-top: 5px;
+	line-height: 1.3;
+	font-size: 20px;
+}
+
+.hu-result .hu-result-bottom {
+	color: #4d5156;
+	line-height: 1.58;
+	font-size: 14px;
 }

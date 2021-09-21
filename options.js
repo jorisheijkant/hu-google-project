@@ -11,7 +11,7 @@ function save_options() {
         }, () => {
             // Update status to let user know options were saved.
             let status = document.getElementById('status');
-            status.textContent = 'Options saved.';
+            status.textContent = 'Instellingen opgeslagen.';
             setTimeout(function() {
                 status.textContent = '';
             }, 750);
@@ -26,9 +26,9 @@ function save_options() {
 function restore_options() {
     if(chrome) {
         chrome.storage.local.get({
-            group: 1,
+            group: 'group1',
             debug: false,
-            casus: 1
+            casus: 'lessNews'
         }, function(items) {
             document.getElementById('group').value = items.group;
         });
