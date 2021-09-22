@@ -61,6 +61,8 @@ let fetchData = async (variables) => {
     const {group, casus} = variables;
     let groupObject;
     let results;
+    let term;
+    let termSlug;
 
     // Check what item we need to fetch
     // Remember, groups are predefined in the groups.js file
@@ -68,6 +70,8 @@ let fetchData = async (variables) => {
         debugIt(`Getting group object for casus ${casus}, group ${group}`);
         if(groups && groups[casus] && groups[casus][group]) {
             groupObject = groups[casus][group];
+            term = groups[casus].term;
+            termSlug = groups[casus].termSlug;
         }
 
         // Check whether the VPS is up. If not, we can fall back to calling the Airtable API directly
@@ -102,7 +106,11 @@ let fetchData = async (variables) => {
         debugIt('No group object found or VPS not available');
     }
 
-    return results;
+    return {
+        results: results,
+        term: term,
+        termSlug: termSlug
+    };
 }
 
 // The main function that's mangling the results
@@ -123,24 +131,38 @@ let mangleResults = (variables, newResults) => {
 
     // If there's a results container, and we're in the first 4 pages, fetch these results and list them
     if (resultsContainer && pageNumber < 5) {
-        // Set results element and remove all normal results
-        let resultsOnPage = resultsContainer.querySelectorAll('div');
-        for (const result of resultsOnPage) {
-            result.remove();
+        // Check whether search term is in search bar or suggested by Google
+        let hasTerm;
+        hasTerm = window.location.href.includes(newResults.termSlug);
+        if(!hasTerm) {
+            let suggestedBox = document.querySelector('#fprsl');
+            if(suggestedBox){
+                debugIt(`has term in suggested box?' ${suggestedBox.innerText}, ${newResults.term}, ${newResults.term === suggestedBox.innerText}`);
+                hasTerm = suggestedBox.innerText === newResults.term;
+            }
         }
 
-        if (newResults && newResults.length > 0) {
-            let resultsOnPage = newResults.filter(result => {
-                if (result && result.fields) {
-                    return result.fields.page === pageNumber;
-                }
-            });
+        if(hasTerm) {
+            debugIt('has search term of research group!');
 
-            let resultElements = resultsOnPage.map(result => {
-                let fields = result.fields;
+            // Set results element and remove all normal results
+            let resultsOnPage = resultsContainer.querySelectorAll('div');
+            for (const result of resultsOnPage) {
+                result.remove();
+            }
 
-                if (fields && fields.title) {
-                    return `<div class="hu-result">
+            if (newResults && newResults.results && newResults.results.length > 0) {
+                let resultsOnPage = newResults.results.filter(result => {
+                    if (result && result.fields) {
+                        return result.fields.page === pageNumber;
+                    }
+                });
+
+                let resultElements = resultsOnPage.map(result => {
+                    let fields = result.fields;
+
+                    if (fields && fields.title) {
+                        return `<div class="hu-result">
                                     <div class="hu-result-wrapper">
                                         <div class="hu-result-top" >
                                             <div class="hu-result-breadcrumbs">
@@ -152,12 +174,15 @@ let mangleResults = (variables, newResults) => {
                                         <p class="hu-result-bottom">${fields.text}</p>
                                     </div>  
                                 </div>`
-                }
-            });
+                    }
+                });
 
-            resultElements.forEach(element => {
-                resultsContainer.innerHTML += element;
-            })
+                resultElements.forEach(element => {
+                    resultsContainer.innerHTML += element;
+                })
+            }
+        } else {
+            debugIt('The search term of this research group is not found, leaving results as is');
         }
 
         // After all is done show them results

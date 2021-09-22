@@ -4,7 +4,7 @@
 }
 
 /* Hide ads above results, since they visually clutter and might overlap */
-#taw {
+#tvcap, .cu-container {
 	display: none;
 }
 

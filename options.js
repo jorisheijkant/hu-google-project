@@ -26,9 +26,9 @@ function save_options() {
 function restore_options() {
     if(chrome) {
         chrome.storage.local.get({
-            group: 'group1',
+            group: 'lessNews',
             debug: false,
-            casus: 'lessNews'
+            casus: 'group1'
         }, function(items) {
             document.getElementById('group').value = items.group;
         });
