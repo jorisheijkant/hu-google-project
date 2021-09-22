@@ -137,8 +137,8 @@ let mangleResults = (variables, newResults) => {
         if(!hasTerm) {
             let suggestedBox = document.querySelector('#fprsl');
             if(suggestedBox){
-                debugIt(`has term in suggested box?' ${suggestedBox.innerText}, ${newResults.term}, ${newResults.term === suggestedBox.innerText}`);
-                hasTerm = suggestedBox.innerText === newResults.term;
+                debugIt(`has term in suggested box?' ${suggestedBox.innerText.toLowerCase()}, ${newResults.term}, ${newResults.term === suggestedBox.innerText.toLowerCase()}`);
+                hasTerm = suggestedBox.innerText.toLowerCase() === newResults.term;
             }
         }
 
