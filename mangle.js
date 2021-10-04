@@ -148,7 +148,7 @@ let mangleResults = (variables, newResults) => {
             // Set results element and remove all normal results
             let resultsOnPage = resultsContainer.querySelectorAll('div');
             for (const result of resultsOnPage) {
-                result.remove();
+                result.style.display = 'none';
             }
 
             if (newResults && newResults.results && newResults.results.length > 0) {
