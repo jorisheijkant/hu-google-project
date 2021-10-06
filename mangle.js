@@ -211,6 +211,9 @@ let debugIt = (item) => {
     if(debug) {
         console.log(item);
     }
+    // if(true) {
+    //     console.log(item);
+    // }
 }
 
 // If we're on a google page, fire up
