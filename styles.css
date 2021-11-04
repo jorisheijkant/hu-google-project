@@ -8,6 +8,11 @@
 	display: none;
 }
 
+/* Overwrite styling for original items to be shown */
+.original-item {
+	display: block !important;
+}
+
 /* Take over basic styling from Google search result */
 
 .hu-result {

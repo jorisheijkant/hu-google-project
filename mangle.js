@@ -123,10 +123,12 @@ let mangleResults = (variables, newResults) => {
     // Get the containers we need
     let resultsWrapper;
     let resultsContainer;
+    let existingResults;
 
     resultsWrapper = document.querySelector('#search');
     if (resultsWrapper) {
-        resultsContainer = resultsWrapper.querySelector('#rso')
+        resultsContainer = resultsWrapper.querySelector('#rso');
+        existingResults = resultsContainer.querySelectorAll('.g');
     }
 
     // If there's a results container, and we're in the first 4 pages, fetch these results and list them
@@ -146,7 +148,7 @@ let mangleResults = (variables, newResults) => {
             debugIt('has search term of research group!');
 
             // Set results element and remove all normal results
-            let resultsOnPage = resultsContainer.querySelectorAll('div');
+            let resultsOnPage = resultsContainer.querySelectorAll(':scope > div');
             for (const result of resultsOnPage) {
                 result.style.display = 'none';
             }
@@ -158,9 +160,22 @@ let mangleResults = (variables, newResults) => {
                     }
                 });
 
-                let resultElements = resultsOnPage.map(result => {
+                let resultElements = resultsOnPage.map((result, index) => {
                     let fields = result.fields;
 
+                    // If the original is to be kept, fish it from the original results array
+                    // And clone it with a display: block
+                    if(fields && fields.keep_original) {
+                        debugIt(`Keep original for ${index}`);
+                        let existing = existingResults[index];
+                        let clone = existing.cloneNode(true);
+                        clone.style.display = 'block';
+                        clone.classList.add('original-item');
+                        debugIt(clone.outerHTML);
+                        return clone.outerHTML;
+                    }
+
+                    // Else create a result based on the Airtable entry
                     if (fields && fields.title) {
                         return `<div class="hu-result">
                                     <div class="hu-result-wrapper">
