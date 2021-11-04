@@ -217,7 +217,7 @@ let isGoogle;
 let debug = false;
 
 if (window && window.location && window.location.href) {
-    isGoogle = window.location.href.includes('google') && window.location.href.includes('search');
+    isGoogle = window.location.href.includes('google') && window.location.href.includes('search') && !window.location.href.includes('tbm=nws') && !window.location.href.includes('&tbm=isch') && !window.location.href.includes('&tbm=shop');
 }
 
 // Declare debug function
@@ -251,4 +251,8 @@ if (isGoogle) {
     mangle();
 } else {
     console.log('User not on a Google search page, HU extension not running');
+
+    // Give search wrapper opacity to prevent white screen
+    let resultsWrapper = document.querySelector('#search');
+    if(resultsWrapper) resultsWrapper.style.opacity = 1;
 }
