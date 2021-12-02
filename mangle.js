@@ -163,6 +163,8 @@ let mangleResults = (variables, newResults) => {
                 let resultElements = resultsOnPage.map((result, index) => {
                     let fields = result.fields;
 
+                    // debugIt(index, fields.page, fields.nr, fields.keep_original);
+
                     // If the original is to be kept, fish it from the original results array
                     // And clone it with a display: block
                     if(fields && fields.keep_original) {
@@ -171,7 +173,7 @@ let mangleResults = (variables, newResults) => {
                         let clone = existing.cloneNode(true);
                         clone.style.display = 'block';
                         clone.classList.add('original-item');
-                        debugIt(clone.outerHTML);
+                        // debugIt(clone.outerHTML);
                         return clone.outerHTML;
                     }
 
@@ -193,7 +195,11 @@ let mangleResults = (variables, newResults) => {
                 });
 
                 resultElements.forEach(element => {
-                    resultsContainer.innerHTML += element;
+                    if(element) {
+                        resultsContainer.innerHTML += element;
+                    } else {
+                        console.log()
+                    }
                 })
             }
         } else {
