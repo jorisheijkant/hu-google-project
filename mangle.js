@@ -149,6 +149,7 @@ let mangleResults = (variables, newResults) => {
 
             // Set results element and remove all normal results
             let resultsOnPage = resultsContainer.querySelectorAll(':scope > div');
+            debugIt(`Page has ${existingResults.length} results`);
             for (const result of resultsOnPage) {
                 result.style.display = 'none';
             }
@@ -170,11 +171,16 @@ let mangleResults = (variables, newResults) => {
                     if(fields && fields.keep_original) {
                         debugIt(`Keep original for ${index}`);
                         let existing = existingResults[index];
-                        let clone = existing.cloneNode(true);
-                        clone.style.display = 'block';
-                        clone.classList.add('original-item');
-                        // debugIt(clone.outerHTML);
-                        return clone.outerHTML;
+                        if(existing) {
+                            let clone = existing.cloneNode(true);
+                            clone.style.display = 'block';
+                            clone.classList.add('original-item');
+                            // debugIt(clone.outerHTML);
+                            return clone.outerHTML;
+                        } else {
+                            debugIt(`No node for ${index}, can not keep original node`);
+                        }
+
                     }
 
                     // Else create a result based on the Airtable entry
