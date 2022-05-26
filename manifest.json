@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "HU Google plug-in",
   "description": "This extension is meant for research purposes of the HU.",
-  "version": "2.3",
+  "version": "2.4",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
